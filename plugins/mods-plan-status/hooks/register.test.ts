@@ -25,13 +25,16 @@ for (const surface of ['terminal', 'desktop'] as const) {
       open.delete(e.id)
       return { value: undefined }
     })
-    on('classic.SessionStart', () => ({}))
+    on('ui.panes', () => ({
+      value: [...open].map(id => ({ id, title: id, isShown: true, isFocused: false, isPlaced: true })),
+    }))
+    on('turn.start', ($, e) => ({ turnId: e.turnId }))
     const filled: string[] = []
     on('prompt.fill', ($, e) => {
       filled.push(e.text)
       return { isFilled: true, text: e.text, cursor: e.text.length }
     })
-    await $.classic.SessionStart({ source: 'clear' }) // runs setShown, as /clear does in a session
+    await $.turn.start({ text: 'hi', turnId: 't1' }) // isShown is false and no pane is up, so nothing opens
     expect(open.has('mods-plan-status')).toBe(false)
     await $.command.run({ command: 'mods-plan-status', args: 'show' })
     expect(open.has('mods-plan-status')).toBe(true)
@@ -64,6 +67,13 @@ for (const surface of ['terminal', 'desktop'] as const) {
     await $.command.run({ command: 'mods-plan-status', args: 'hide' })
     expect(open.has('mods-plan-status')).toBe(false)
     await $.command.run({ command: 'mods-plan-status', args: 'show' })
+    expect(open.has('mods-plan-status')).toBe(true)
+
+    // /clear or /resume left isShown true but the pane gone: the next main-loop turn reopens it
+    open.delete('mods-plan-status')
+    await $.turn.start({ text: 'hi', turnId: 't2', agentId: 'sub-1' }) // a subagent's turn changes nothing
+    expect(open.has('mods-plan-status')).toBe(false)
+    await $.turn.start({ text: 'hi', turnId: 't3' })
     expect(open.has('mods-plan-status')).toBe(true)
   })
 }

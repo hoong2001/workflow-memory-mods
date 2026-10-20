@@ -49,10 +49,16 @@ export const register: Register = on => {
     return next(e)
   }).catch(($, e, next) => (next.called ? undefined : next(e))) // a failed hook never keeps the pane open
 
-  // /resume and /clear switch to a new session id in the same process: its state starts empty and
-  // session.start does not fire again, but the classic SessionStart hook does.
-  on('classic.SessionStart', async ($, e, next) => {
-    if (e.source === 'resume' || e.source === 'clear') await setShown($, await read($, isShown))
+  // /resume and /clear switch to a new session id in the same process, and session.start does not fire
+  // again. classic.SessionStart would, but under a Team/Enterprise login the built-in guard passes every
+  // classic.* event past user-installed mods, so this mod never hears it. Instead, each main-loop turn
+  // brings the pane back in line with isShown when the two disagree.
+  on('turn.start', async ($, e, next) => {
+    if (e.agentId === undefined) {
+      const shown = await read($, isShown)
+      const isUp = (await $.ui.panes()).some(pane => pane.id === PANE)
+      if (shown !== isUp) await setShown($, shown)
+    }
     return next(e)
   }).catch(($, e, next) => (next.called ? undefined : next(e)))
 
