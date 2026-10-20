@@ -1,0 +1,9 @@
+{
+  "name": "mods-context-panel",
+  "version": "0.4.3",
+  "description": "Everything /context shows, live in a pane; /mods-context-panel [show|hide]",
+  "author": {
+    "name": "Hoong"
+  },
+  "types": "./types/index.d.ts"
+}
