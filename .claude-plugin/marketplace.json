@@ -1,6 +1,6 @@
 {
   "name": "workflow-memory-mods",
-  "description": "Optional panes and a toggle band for the workflow-memory-claude template; each mod installs on its own",
+  "description": "Optional pane for the workflow-memory-claude template: live plan status",
   "owner": {
     "name": "Hoong"
   },
@@ -8,18 +8,6 @@
     {
       "name": "mods-plan-status",
       "source": "./plugins/mods-plan-status"
-    },
-    {
-      "name": "mods-context-panel",
-      "source": "./plugins/mods-context-panel"
-    },
-    {
-      "name": "mods-toggle-band",
-      "source": "./plugins/mods-toggle-band"
-    },
-    {
-      "name": "mods-agent-watch",
-      "source": "./plugins/mods-agent-watch"
     }
   ]
 }

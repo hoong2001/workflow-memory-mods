@@ -1,7 +1,0 @@
-{
-  "name": "mods-agent-watch",
-  "version": "0.1.0",
-  "description": "Live pane of this session's subagents as a call tree: status, current tool, files read and written, tokens; /mods-agent-watch [show|hide]",
-  "author": { "name": "Hoong" },
-  "types": "./types/index.d.ts"
-}
