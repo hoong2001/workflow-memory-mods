@@ -54,7 +54,8 @@ for (const surface of ['terminal', 'desktop'] as const) {
       },
     })
     expect(await pane.find({ text: /1 live plan/ })).toBeDefined()
-    expect(await pane.find({ text: '1. ' })).toBeDefined()
+    expect(await pane.find({ text: /sales-module .1./ })).toBeDefined() // the module folder
+    expect(await pane.find({ text: '└─ ' })).toBeDefined()
     expect(await pane.find({ text: 'sales-module-2026-10-01-orders-export.md' })).toBeDefined() // the full plan name
     expect(await pane.find({ key: 'project-memory/x' })).toBeDefined() // the [ @ ] button before a plan with a path    expect(await pane.find({ text: /•/ })).toBeDefined()
     expect(await pane.find({ text: /You now: test task 2/ })).toBeDefined()

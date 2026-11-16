@@ -15,6 +15,7 @@ declare module 'claude-code' {
       // 'missing' = no project-memory/project-memory-status.md here: draw nothing
       plans: LivePlan[] | 'missing' | 'unknown-format'
       isShown: boolean
+      collapsed: string[] // module folders folded shut in the pane
     }
   }
 }

@@ -1,10 +1,12 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, RenderChildren } from 'claude-code'
+import type { LivePlan } from '../types'
 
 import { parseLivePlans } from './parse'
 
 const PANE = 'mods-plan-status'
 const plans = atom({ plugin: 'mods-plan-status', key: 'plans' } as const, 'missing')
+const collapsed = atom({ plugin: 'mods-plan-status', key: 'collapsed' } as const, [] as string[]) // module folders the person folded
 const isShown = atom({ plugin: 'mods-plan-status', key: 'isShown' } as const, false) // hidden at session start until /mods-plan-status show
 
 // The file is rebuilt by the project's own PostToolUse hook (.claude/hooks/project-memory-status.mjs);
@@ -83,54 +85,75 @@ export const register: Register = on => {
     }
     if (list.length === 0) return <Text dimColor>No live plans</Text>
 
-    // An ordered list, oldest first: [ @ ] and the full plan name, then • status, • You now, • Next.
-    // The marker sits in its own column, so a wrapped line stays aligned under its own text.
-    const row = (marker: string, content: RenderChildren) => (
+    // A tree: one folder per module (in order of first appearance), its plans beneath, each plan's
+    // status / You now / Next as leaves. The tree glyphs sit in their own column, so a wrapped line
+    // stays aligned under its own text.
+    const row = (prefix: string, content: RenderChildren) => (
       <Box flexDirection="row">
-        <Text dimColor>{marker}</Text>
+        <Text dimColor>{prefix}</Text>
         <Box flexShrink={1}>{content}</Box>
       </Box>
     )
-    const width = String(list.length).length
-    const bullet = ' '.repeat(width + 2) + '• '
+    const folded = await read($, collapsed)
+    const groups = new Map<string, LivePlan[]>()
+    for (const p of list) groups.set(p.module, [...(groups.get(p.module) || []), p])
 
     return (
       <Box flexDirection="column">
-        <Text bold>{list.length} live plan(s) — oldest first</Text>
+        <Text bold>
+          {list.length} live plan(s) in {groups.size} module(s)
+        </Text>
         <Box flexDirection="column" marginTop={1}>
-          {list.map((p, i) => {
-            const title = <Text bold>{p.plan}</Text>
-            const leaves = [
-              <Text>
-                <Text color="warning">{p.status}</Text>
-                {p.detail ? ` · ${p.detail}` : ''}
-                <Text dimColor>{p.updated ? ` · ${p.updated}` : ''}</Text>
-              </Text>,
-              p.youNow ? <Text>You now: {p.youNow}</Text> : null,
-              p.next ? <Text>Next: {p.next}</Text> : null,
-            ].filter(leaf => leaf !== null)
+          {[...groups].map(([module, items]) => {
+            const isFolded = folded.includes(module)
             return (
               <Box flexDirection="column">
-                {row(
-                  `${String(i + 1).padStart(width)}. `,
-                  p.path ? (
-                    // [ @ ] first, at a fixed width, so a long name wraps under itself instead of pushing the button around;
-                    // a press puts `@<path> ` in the prompt box at the cursor
-                    <Box flexDirection="row">
-                      <Button
-                        key={p.path}
-                        label="@"
-                        variant="primary"
-                        onPress={() => void $.prompt.fill({ text: `@${p.path} `, mode: 'insert' })}
-                      />
-                      <Text> </Text>
-                      <Box flexShrink={1}>{title}</Box>
-                    </Box>
-                  ) : (
-                    title
-                  ),
-                )}
-                {leaves.map(leaf => row(bullet, leaf))}
+                <Button
+                  key={`folder:${module}`}
+                  label={`${isFolded ? '▸' : '▾'} ${module} (${items.length})`}
+                  onPress={() =>
+                    void update($, collapsed, cur => (cur.includes(module) ? cur.filter(m => m !== module) : [...cur, module]))
+                  }
+                />
+                {isFolded
+                  ? null
+                  : items.map((p, i) => {
+                      const isLast = i === items.length - 1
+                      const title = <Text bold>{p.plan}</Text>
+                      const leaves = [
+                        <Text>
+                          <Text color="warning">{p.status}</Text>
+                          {p.detail ? ` · ${p.detail}` : ''}
+                          <Text dimColor>{p.updated ? ` · ${p.updated}` : ''}</Text>
+                        </Text>,
+                        p.youNow ? <Text>You now: {p.youNow}</Text> : null,
+                        p.next ? <Text>Next: {p.next}</Text> : null,
+                      ].filter(leaf => leaf !== null)
+                      return (
+                        <Box flexDirection="column">
+                          {row(
+                            isLast ? '└─ ' : '├─ ',
+                            p.path ? (
+                              // [ @ ] first, at a fixed width, so a long name wraps under itself;
+                              // a press puts `@<path> ` in the prompt box at the cursor
+                              <Box flexDirection="row">
+                                <Button
+                                  key={p.path}
+                                  label="@"
+                                  variant="primary"
+                                  onPress={() => void $.prompt.fill({ text: `@${p.path} `, mode: 'insert' })}
+                                />
+                                <Text> </Text>
+                                <Box flexShrink={1}>{title}</Box>
+                              </Box>
+                            ) : (
+                              title
+                            ),
+                          )}
+                          {leaves.map(leaf => row(isLast ? '   • ' : '│  • ', leaf))}
+                        </Box>
+                      )
+                    })}
               </Box>
             )
           })}
