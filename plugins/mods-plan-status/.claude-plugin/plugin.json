@@ -1,6 +1,6 @@
 {
   "name": "mods-plan-status",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Shows the unfinished plans from project-memory/project-memory-status.md in a pane; /mods-plan-status [show|hide]",
   "author": {
     "name": "Hoong"

@@ -98,11 +98,22 @@ export const register: Register = on => {
     const groups = new Map<string, LivePlan[]>()
     for (const p of list) groups.set(p.module, [...(groups.get(p.module) || []), p])
 
+    // one button for the whole tree: everything folded → open all, otherwise fold all
+    const isAllFolded = [...groups.keys()].every(module => folded.includes(module))
+
     return (
       <Box flexDirection="column">
-        <Text bold>
-          {list.length} live plan(s) in {groups.size} module(s)
-        </Text>
+        <Box flexDirection="row">
+          <Text bold>
+            {list.length} live plan(s) in {groups.size} module(s)
+          </Text>
+          <Text> </Text>
+          <Button
+            key="toggle-all"
+            label={isAllFolded ? '▾ Expand all' : '▸ Collapse all'}
+            onPress={() => void update($, collapsed, () => (isAllFolded ? [] : [...groups.keys()]))}
+          />
+        </Box>
         <Box flexDirection="column" marginTop={1}>
           {[...groups].map(([module, items]) => {
             const isFolded = folded.includes(module)
